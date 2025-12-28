@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle2, ArrowRight, Share2 } from "lucide-react";
+import { CheckCircle2, ArrowRight, Share2, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const WaitlistForm = () => {
   const [name, setName] = useState("");
@@ -44,21 +45,36 @@ const WaitlistForm = () => {
 
     setIsSubmitting(true);
 
-    // Simulate API call - replace with actual backend integration
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const { error } = await supabase
+        .from('waitlist_submissions')
+        .insert({
+          name: name.trim(),
+          whatsapp: whatsapp.trim() || null,
+          email: email.trim() || null,
+        });
 
-    // Store locally for now (replace with actual backend)
-    const submission = {
-      name: name.trim(),
-      whatsapp: whatsapp.trim() || null,
-      email: email.trim() || null,
-      timestamp: new Date().toISOString(),
-    };
-    
-    console.log("Waitlist submission:", submission);
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+      if (error) throw error;
+
+      setIsSubmitted(true);
+    } catch (error: any) {
+      console.error("Waitlist submission error:", error);
+      toast({
+        title: "Something went wrong",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoHome = () => {
+    setIsSubmitted(false);
+    setName("");
+    setWhatsapp("");
+    setEmail("");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleShare = () => {
@@ -101,15 +117,27 @@ const WaitlistForm = () => {
               </p>
             </div>
 
-            <Button 
-              variant="gold" 
-              size="lg"
-              onClick={handleShare}
-              className="gap-2"
-            >
-              <Share2 className="w-5 h-5" />
-              Share with a friend
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                variant="gold" 
+                size="lg"
+                onClick={handleShare}
+                className="gap-2"
+              >
+                <Share2 className="w-5 h-5" />
+                Share with a friend
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={handleGoHome}
+                className="gap-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+              >
+                <Home className="w-5 h-5" />
+                Back to Home
+              </Button>
+            </div>
           </div>
         </div>
       </section>
